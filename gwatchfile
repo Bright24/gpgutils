@@ -1,0 +1,29 @@
+#!/bin/
+while true
+do
+    
+    FILE=`xclip -o -sel c | grep file: | cut -d / -f 3-`
+    
+    if [ -f "$FILE" ] && [ "$FILE" != "$LFILE" ]; then
+        FILE=$(xclip -o -sel c | grep file | cut -d/ -f 3-)
+        PATHNAME=$(echo $FILE | rev | cut -d/ -f 2- | rev)
+        FILENAME=$(echo $FILE | rev | cut -d/ -f 1 | rev)
+        FILENAMEEXT=$(echo $FILENAME | rev | cut -d/ -f 1 | cut -d . -f 1 | rev)
+        
+        if [ $FILENAMEEXT = "gpg" ] || [ $FILENAMEEXT = "pgp" ]; then
+            echo $FILE
+            NEWFILENAME=$(echo $FILENAME | cut -d . -f-2)
+            gpg -d --batch --yes -o "$PATHNAME/$NEWFILENAME" $FILE
+            notify-send "$NEWFILENAME created in the same folder."
+            # else
+            #     echo $FILENAMEEXT
+            #     gpg -er <keyname> $FILE
+            #     echo "Else"
+        fi
+        
+    #else
+        #echo "It is not a file or it is the same file which was copied before or it is not a valid encrypted file"
+    fi
+    LFILE=$FILE
+    sleep 2
+done

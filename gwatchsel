@@ -1,0 +1,27 @@
+#!/bin/sh
+while true
+do
+    CLIP=`xclip -o -sel c`
+    if [ "$CLIP" != "$LCLIP" ]
+    then
+        if (echo ${CLIP} | grep -qe "-----BEGIN PGP MESSAGE-----") && (echo ${CLIP} | grep -qe "-----END PGP MESSAGE-----")
+        then
+            #uncomment the below lines if you wish to append the decrypted text below the previous ones.
+            # notify-send "Found encrypted text. Attempting to decrypt it..."
+            # printf '\n--------------\n' >> /tmp/ascfile
+            MSG=`xclip -o -sel c | gpg -dv 2>&1`
+            notify-send "$MSG"
+            echo "$CLIP" | gpg -d > /tmp/ascfile
+            echo "$CLIP" | gpg -d | xclip -i -sel p
+            gedit /tmp/ascfile &
+        elif (echo ${CLIP} | grep -qe "-----BEGIN PGP MESSAGE-----") && !(echo ${CLIP} | grep -qe "-----END PGP MESSAGE-----")
+        then
+            notify-send "Incorrect selection"
+        elif !(echo ${CLIP} | grep -qe "-----BEGIN PGP MESSAGE-----") && (echo ${CLIP} | grep -qe "-----END PGP MESSAGE-----")
+        then
+            notify-send "Incorrect selection"
+        fi
+        LCLIP=$CLIP
+    fi
+    sleep 2
+done
