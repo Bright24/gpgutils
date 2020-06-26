@@ -1,8 +1,17 @@
 #!/bin/sh
+
+#copy the clipboard contents on the first run, consequently in the last else block in the while loop this way it contains the last readable test copied.
+#then compare it with the decrypted msg of the current selection, if yes then don't run the while loop this time.
+#the above is just to prevent decryption of the currently encrypted message.
+
+PREVMSG=`xclip -o -sel c`
+
 while true
 do
     CLIP=`xclip -o -sel c`
-    if [ "$CLIP" != "$LCLIP" ]
+    DECMSG=`xclip -o -sel c | gpg -d -q`
+   
+    if [ "$CLIP" != "$LCLIP" ] && [ "$PREVMSG" != "$DECMSG" ]
     then
         if (echo ${CLIP} | grep -qe "-----BEGIN PGP MESSAGE-----") && (echo ${CLIP} | grep -qe "-----END PGP MESSAGE-----")
         then
@@ -12,7 +21,8 @@ do
             MSG=`xclip -o -sel c | gpg -dv 2>&1`
             notify-send "$MSG"
             echo "$CLIP" | gpg -d > /tmp/ascfile
-            echo "$CLIP" | gpg -d | xclip -i -sel p
+            # copy it back to the primary clipboard
+            # echo "$CLIP" | gpg -d | xclip -i -sel p
             gedit /tmp/ascfile &
         elif (echo ${CLIP} | grep -qe "-----BEGIN PGP MESSAGE-----") && !(echo ${CLIP} | grep -qe "-----END PGP MESSAGE-----")
         then
@@ -20,6 +30,8 @@ do
         elif !(echo ${CLIP} | grep -qe "-----BEGIN PGP MESSAGE-----") && (echo ${CLIP} | grep -qe "-----END PGP MESSAGE-----")
         then
             notify-send "Incorrect selection"
+        else
+            PREVMSG=$CLIP
         fi
         LCLIP=$CLIP
     fi
